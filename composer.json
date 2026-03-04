@@ -1,0 +1,21 @@
+{
+    "name": "vet/vet",
+    "description": "VET Backend",
+    "type": "project",
+    "require": {
+        "slim/slim": "^4.15",
+        "slim/psr7": "^1.8"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^13.0"
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "autoload": {
+        "psr-4": {
+            "Vet\\Vet\\": "src/",
+            "Vet\\Tests\\": "tests/"
+        }
+    }
+}
