@@ -4,13 +4,15 @@
     "type": "project",
     "require": {
         "slim/slim": "^4.15",
-        "slim/psr7": "^1.8"
+        "slim/psr7": "^1.8",
+        "firebase/php-jwt": "^7.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^13.0"
     },
     "scripts": {
-        "test": "phpunit"
+        "test": "phpunit",
+        "start": "php -S localhost:8000 -t src src/Server.php"
     },
     "autoload": {
         "psr-4": {
