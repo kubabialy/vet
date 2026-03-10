@@ -6,6 +6,7 @@ namespace Vet\Vet;
 
 require __DIR__ . '/../vendor/autoload.php';
 
+use Exception;
 use Slim\Factory\AppFactory;
 use Vet\Vet\Routes;
 
@@ -21,15 +22,10 @@ $app->addRoutingMiddleware();
  */
 $app->addErrorMiddleware(true, true, true);
 
-foreach (Routes::routes() as $route) {
-    match ($route[0]) {
-        Routes::GET_REQ => $app->get($route[1], $route[2]),
-        Routes::POST_REQ => $app->post($route[1], $route[2]),
-        Routes::PUT_REQ => $app->put($route[1], $route[2]),
-        Routes::DELETE_REQ => $app->delete($route[1], $route[2]),
-        Routes::PATCH_REQ => $app->patch($route[1], $route[2]),
-    };
-}
+/**
+ * @throws Exception when Routes fail to apply handlers to appropriate dispatchers.
+ */
+Routes::initialize()->apply($app);
 
 
 $app->run();
