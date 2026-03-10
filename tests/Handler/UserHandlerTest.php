@@ -27,15 +27,13 @@ use Vet\Vet\Database\User;
 #[CoversClass(UserHandler::class)]
 class UserHandlerTest extends TestCase
 {
-    private string $testSecret;
     private UserHandler $handler;
-    private Auth&MockObject $authMock;
 
     protected function setUp(): void
     {
         $this->testSecret = base64_encode(random_bytes(32));
-        $this->authMock = $this->createMock(Auth::class);
-        $this->handler = new UserHandler($this->authMock);
+        $authMock = $this->createMock(Auth::class);
+        $this->handler = new UserHandler($authMock);
     }
 
     public function testSignUpReturnsErrorWhenEmailIsEmpty(): void

@@ -79,12 +79,12 @@ class Database
      *
      * @param string $sql The SQL query to execute.
      * @param array $params Optional parameters for prepared statement.
-     * @param string $modelClass The class name to instantiate for each row.
+     * @param string|null $modelClass The class name to instantiate for each row.
      * @param array $fieldMapping Optional mapping from database columns to model properties.
      * @return array Array of model objects.
      * @throws RuntimeException If query execution fails.
      */
-    public static function query(string $sql, array $params = [], string $modelClass = null, array $fieldMapping = []): array
+    public static function query(string $sql, array $params = [], ?string $modelClass = null, array $fieldMapping = []): array
     {
         $pdo = self::getInstance();
 
@@ -116,7 +116,7 @@ class Database
      * @param array $fieldMapping Optional mapping from database columns to model properties.
      * @return object|null The model object, or null if no row found.
      */
-    public static function queryFirst(string $sql, array $params = [], string $modelClass = null, array $fieldMapping = []): ?object
+    public static function queryFirst(string $sql, array $params = [], ?string $modelClass = null, array $fieldMapping = []): ?object
     {
         $results = self::query($sql, $params, $modelClass, $fieldMapping);
         return $results[0] ?? null;
