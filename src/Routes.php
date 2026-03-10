@@ -45,6 +45,18 @@ readonly class Routes
      */
     public function apply(object $app): void
     {
+        /**
+         * Alternative version of this code, assuming that whoever is using that could be significantly simpler.
+         * We could effectively just allow PHP to handle the type checking and explore if the routes aren't set properly.
+         *
+         * This code could be simplified to:
+         *
+         * foreach ($this->routes as $route) {
+         *     [$method, $path, $handler] = $route;
+         *
+         *     $app->$method($path, $handler);
+         * }
+         */
         foreach ($this->routes as $route) {
             if (count($route) !== 3) throw new Exception('Invalid route');
 
