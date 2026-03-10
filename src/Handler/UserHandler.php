@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Vet\Vet\Handler;
 
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use RuntimeException;
 use Vet\Vet\Auth\Auth;
 use Vet\Vet\Database\Database;
 use Vet\Vet\Database\User;
-use Vet\Vet\DTO\SignInRequest;
 use Vet\Vet\DTO\SignInResponse;
-use Vet\Vet\DTO\SignUpRequest;
 use Vet\Vet\DTO\SignUpResponse;
 
 /**
@@ -47,12 +47,12 @@ class UserHandler
      * - password: User's password (required, min 8 characters)
      * - repeatedPassword: Password confirmation (required, must match password)
      *
-     * @param \Psr\Http\Message\ServerRequestInterface $request The HTTP request.
-     * @param \Psr\Http\Message\ResponseInterface $response The HTTP response.
+     * @param ServerRequestInterface $request The HTTP request.
+     * @param ResponseInterface $response The HTTP response.
      * @param array $args Route arguments (unused).
-     * @return \Psr\Http\Message\ResponseInterface The HTTP response with JSON body.
+     * @return ResponseInterface The HTTP response with JSON body.
      */
-    public function signUp(\Psr\Http\Message\ServerRequestInterface $request, \Psr\Http\Message\ResponseInterface $response, array $args): \Psr\Http\Message\ResponseInterface
+    public function signUp(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         $body = $request->getParsedBody();
 
@@ -73,9 +73,10 @@ class UserHandler
             return $this->jsonResponse($response, SignUpResponse::error('Email already registered'), 409);
         }
 
-        $hashedPassword = password_hash($password, PASSWORD_ARGON2ID);
-
-        $userId = $this->createUser($email, $hashedPassword);
+        $userId = $this->createUser(
+            $email,
+            password_hash($password, PASSWORD_ARGON2ID),
+        );
 
         return $this->jsonResponse($response, SignUpResponse::success($userId), 201);
     }
@@ -90,12 +91,12 @@ class UserHandler
      * - email: User's email address (required)
      * - password: User's password (required)
      *
-     * @param \Psr\Http\Message\ServerRequestInterface $request The HTTP request.
-     * @param \Psr\Http\Message\ResponseInterface $response The HTTP response.
+     * @param ServerRequestInterface $request The HTTP request.
+     * @param ResponseInterface $response The HTTP response.
      * @param array $args Route arguments (unused).
-     * @return \Psr\Http\Message\ResponseInterface The HTTP response with JSON body.
+     * @return ResponseInterface The HTTP response with JSON body.
      */
-    public function signIn(\Psr\Http\Message\ServerRequestInterface $request, \Psr\Http\Message\ResponseInterface $response, array $args): \Psr\Http\Message\ResponseInterface
+    public function signIn(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         $body = $request->getParsedBody();
 
@@ -214,34 +215,33 @@ class UserHandler
     private function findUserByEmail(string $email): ?User
     {
         $sql = 'SELECT * FROM users WHERE email = :email LIMIT 1';
-        $result = Database::query(
-            $sql,
-            ['email' => $email],
-            User::class,
-            [
-                'id' => 'id',
-                'email' => 'email',
-                'hashed_password' => 'hashedPassword',
-                'is_logable' => 'isLogable',
-                'is_deleted' => 'isDeleted',
-                'is_active' => 'isActive',
-                'ban_reason' => 'banReason',
-                'disable_reason' => 'disableReason',
-            ]
-        );
+        $row = Database::queryFirst($sql, ['email' => $email]);
 
-        return $result[0] ?? null;
+        if ($row === null) {
+            return null;
+        }
+
+        return new User(
+            id: (int) $row['id'],
+            email: $row['email'],
+            hashedPassword: $row['hashed_password'],
+            isLogable: (bool) $row['is_logable'],
+            isDeleted: (bool) $row['is_deleted'],
+            isActive: (bool) $row['is_active'],
+            banReason: $row['ban_reason'],
+            disableReason: $row['disable_reason'],
+        );
     }
 
     /**
      * Creates a JSON response.
      *
-     * @param \Psr\Http\Message\ResponseInterface $response The HTTP response.
+     * @param ResponseInterface $response The HTTP response.
      * @param object $data The data to encode as JSON.
      * @param int $statusCode The HTTP status code.
-     * @return \Psr\Http\Message\ResponseInterface The JSON response.
+     * @return ResponseInterface The JSON response.
      */
-    private function jsonResponse(\Psr\Http\Message\ResponseInterface $response, object $data, int $statusCode): \Psr\Http\Message\ResponseInterface
+    private function jsonResponse(ResponseInterface $response, object $data, int $statusCode): ResponseInterface
     {
         $response->getBody()->write(json_encode($data));
         return $response

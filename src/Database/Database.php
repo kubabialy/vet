@@ -12,7 +12,7 @@ use RuntimeException;
  * Database provides a lightweight wrapper for PostgreSQL database operations.
  *
  * This class manages a single PDO connection instance and provides helper methods
- * for executing queries and binding results to model objects.
+ * for executing queries.
  *
  * Configuration is loaded from environment variables:
  * - DB_HOST: Database host (default: 'localhost')
@@ -72,19 +72,16 @@ class Database
     }
 
     /**
-     * Executes a query and binds results to a model object.
+     * Executes a query and returns all rows as associative arrays.
      *
-     * This method is useful for SELECT queries where you want to map
-     * result rows to model objects.
+     * This method is useful for SELECT queries.
      *
      * @param string $sql The SQL query to execute.
      * @param array $params Optional parameters for prepared statement.
-     * @param string|null $modelClass The class name to instantiate for each row.
-     * @param array $fieldMapping Optional mapping from database columns to model properties.
-     * @return array Array of model objects.
+     * @return array Array of associative arrays representing rows.
      * @throws RuntimeException If query execution fails.
      */
-    public static function query(string $sql, array $params = [], ?string $modelClass = null, array $fieldMapping = []): array
+    public static function query(string $sql, array $params = []): array
     {
         $pdo = self::getInstance();
 
@@ -92,33 +89,22 @@ class Database
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
 
-            if ($modelClass === null) {
-                return $stmt->fetchAll();
-            }
-
-            $results = [];
-            while ($row = $stmt->fetch()) {
-                $results[] = self::bindToModel($row, $modelClass, $fieldMapping);
-            }
-
-            return $results;
+            return $stmt->fetchAll();
         } catch (PDOException $e) {
             throw new RuntimeException("Query execution failed: " . $e->getMessage());
         }
     }
 
     /**
-     * Executes a query and returns the first row as a model object.
+     * Executes a query and returns the first row as an associative array.
      *
      * @param string $sql The SQL query to execute.
      * @param array $params Optional parameters for prepared statement.
-     * @param string $modelClass The class name to instantiate.
-     * @param array $fieldMapping Optional mapping from database columns to model properties.
-     * @return object|null The model object, or null if no row found.
+     * @return array|null The associative array representing the row, or null if not found.
      */
-    public static function queryFirst(string $sql, array $params = [], ?string $modelClass = null, array $fieldMapping = []): ?object
+    public static function queryFirst(string $sql, array $params = []): ?array
     {
-        $results = self::query($sql, $params, $modelClass, $fieldMapping);
+        $results = self::query($sql, $params);
         return $results[0] ?? null;
     }
 
@@ -153,32 +139,6 @@ class Database
     public static function lastInsertId(): string
     {
         return self::getInstance()->lastInsertId();
-    }
-
-    /**
-     * Binds a database row to a model object.
-     *
-     * @param array $row Database row data.
-     * @param string $modelClass The class to instantiate.
-     * @param array $fieldMapping Mapping from database columns to constructor parameters.
-     * @return object The model object.
-     */
-    private static function bindToModel(array $row, string $modelClass, array $fieldMapping): object
-    {
-        $args = [];
-
-        foreach ($fieldMapping as $dbColumn => $propertyName) {
-            $args[$propertyName] = $row[$dbColumn] ?? null;
-        }
-
-        if (empty($fieldMapping)) {
-            foreach ($row as $column => $value) {
-                $args[$column] = $value;
-            }
-        }
-
-        $reflection = new \ReflectionClass($modelClass);
-        return $reflection->newInstanceArgs($args);
     }
 
     /**
