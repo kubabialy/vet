@@ -24,6 +24,7 @@ class AuthTest extends TestCase
     {
         return new User(
             id: $data['id'],
+            email: $data['email'] ?? 'test@example.com',
             hashedPassword: $data['passwordHash'],
             isLogable: $data['isLogable'],
             isDeleted: $data['isDeleted'],
