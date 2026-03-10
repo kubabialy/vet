@@ -3,6 +3,7 @@
     "description": "VET Backend",
     "type": "project",
     "require": {
+        "php": "8.5",
         "slim/slim": "^4.15",
         "slim/psr7": "^1.8",
         "firebase/php-jwt": "^7.0",
