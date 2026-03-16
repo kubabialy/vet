@@ -5,18 +5,15 @@ declare(strict_types=1);
 namespace Vet\Tests;
 
 use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\MockObject\MockObject;
 use Slim\App;
 use Vet\Vet\Routes;
 use Vet\Vet\Handler\UserHandler;
-use Vet\Vet\Auth\Auth;
 
 class RoutesApplyTest extends TestCase
 {
     private function createUserHandler(): UserHandler
     {
-        $secret = base64_encode(random_bytes(32));
-        return new UserHandler(new Auth($secret));
+        return new UserHandler();
     }
 
     public function testApplyCallsGetForGetRoutes(): void
@@ -66,7 +63,7 @@ class RoutesApplyTest extends TestCase
         $this->assertFalse(is_callable($handler), 'Class::method array should not be callable');
 
         [$class, $method] = $handler;
-        $processedHandler = [new $class(new Auth('test-secret')), $method];
+        $processedHandler = [new $class(), $method];
         
         $this->assertTrue(is_callable($processedHandler), 'Processed handler should be callable');
     }

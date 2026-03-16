@@ -8,10 +8,12 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use RuntimeException;
 use Vet\Vet\Auth\Auth;
+use Vet\Vet\Config\Config;
 use Vet\Vet\Database\Database;
 use Vet\Vet\Database\User;
 use Vet\Vet\DTO\SignInResponse;
 use Vet\Vet\DTO\SignUpResponse;
+use Vet\Vet\DTO\UserStatus;
 
 /**
  * UserHandler handles user-related HTTP requests.
@@ -26,15 +28,6 @@ class UserHandler
      * Minimum password length requirement.
      */
     private const int MIN_PASSWORD_LENGTH = 8;
-
-    /**
-     * UserHandler constructor.
-     *
-     * @param Auth $auth Auth instance for JWT token generation.
-     */
-    public function __construct(
-        private readonly Auth $auth,
-    ) {}
 
     /**
      * Handles user registration (sign up) requests.
@@ -76,6 +69,7 @@ class UserHandler
         $userId = $this->createUser(
             $email,
             password_hash($password, PASSWORD_ARGON2ID),
+            UserStatus::ACTIVE,
         );
 
         return $this->jsonResponse($response, SignUpResponse::success($userId), 201);
@@ -121,13 +115,19 @@ class UserHandler
             return $this->jsonResponse($response, SignInResponse::error('Invalid credentials'), 401);
         }
 
-        $authResult = $this->auth->authenticate($user, $password);
+        $config = Config::getInstance()->config;
 
-        if ($authResult->hasError) {
-            return $this->jsonResponse($response, SignInResponse::error($authResult->error), 401);
-        }
+        $authResult = Auth::authenticate(
+            $user,
+            $password,
+            $config['jwt']['secret'],
+            $config['jwt']['iss'],
+            $config['jwt']['aud'],
+        );
 
-        return $this->jsonResponse($response, SignInResponse::success($authResult->token, $user->id), 200);
+        return $authResult->hasError
+            ? $this->jsonResponse($response, SignInResponse::error($authResult->error), 401)
+            : $this->jsonResponse($response, SignInResponse::success($authResult->token, $user->id), 200);
     }
 
     /**
@@ -186,24 +186,25 @@ class UserHandler
      * @return int The ID of the newly created user.
      * @throws RuntimeException If user creation fails.
      */
-    private function createUser(string $email, string $hashedPassword): int
+    private function createUser(string $email, string $hashedPassword, string $status): int
     {
         $sql = '
-            INSERT INTO users (email, hashed_password, is_logable, is_deleted, is_active, created_at, updated_at)
-            VALUES (:email, :hashedPassword, true, false, true, NOW(), NOW())
+            INSERT INTO users (email, hashed_password, status, created_at, updated_at)
+            VALUES (:email, :hashedPassword, :status, NOW(), NOW())
             RETURNING id
         ';
 
         $result = Database::query($sql, [
             'email' => $email,
             'hashedPassword' => $hashedPassword,
+            'status' => $status
         ]);
 
         if (empty($result)) {
             throw new RuntimeException('Failed to create user');
         }
 
-        return (int) $result[0]['id'];
+        return (int)$result[0]['id'];
     }
 
     /**
@@ -222,12 +223,10 @@ class UserHandler
         }
 
         return new User(
-            id: (int) $row['id'],
+            id: (int)$row['id'],
             email: $row['email'],
             hashedPassword: $row['hashed_password'],
-            isLogable: (bool) $row['is_logable'],
-            isDeleted: (bool) $row['is_deleted'],
-            isActive: (bool) $row['is_active'],
+            status: $row['status'],
             banReason: $row['ban_reason'],
             disableReason: $row['disable_reason'],
         );

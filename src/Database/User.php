@@ -10,9 +10,7 @@ readonly class User
         public int $id,
         public string $email,
         public string $hashedPassword,
-        public bool $isLogable,
-        public bool $isDeleted,
-        public bool $isActive,
+        public string $status,
         public ?string $banReason,
         public ?string $disableReason,
     ) {}

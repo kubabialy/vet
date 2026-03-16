@@ -5,6 +5,7 @@ namespace Vet\Vet\Auth;
 use Firebase\JWT\JWT;
 use RuntimeException;
 use Vet\Vet\Database\User;
+use Vet\Vet\DTO\UserStatus;
 
 /**
  * Class Auth
@@ -18,21 +19,6 @@ class Auth
     const string DEFAULT_ALGORITHM = 'HS256';
 
     /**
-     * Auth constructor.
-     *
-     * @param string $key Secret key for JWT encoding.
-     * @param string $iss Issuer claim for JWT payload.
-     * @param string $aud Audience claim for JWT payload.
-     */
-    public function __construct(
-        private readonly string $key,
-        private readonly string $iss = "http://localhost:8080",
-        private readonly string $aud = "http://localhost:8000",
-    )
-    {
-    }
-
-    /**
      * Authenticates a user and generates a JWT token if successful.
      *
      * @param User $user The user to authenticate.
@@ -40,35 +26,34 @@ class Auth
      * @return AuthResult The result of the authentication process.
      * @throws RuntimeException If an unexpected error occurs.
      */
-    public function authenticate(User $user, string $password): AuthResult
+    public static function authenticate(
+        User   $user,
+        string $password,
+        string $key,
+        string $iss,
+        string $aud
+    ): AuthResult
     {
-        // Disabled or banned user.
-        if (!$user->isLogable && !$user->isDeleted && $user->isActive) {
-            if ($user->banReason) return AuthResult::error(AuthResult::ERROR_USER_BANNED);
-
-            if ($user->disableReason) return AuthResult::error(AuthResult::ERROR_USER_DISABLED);
-
-            throw new RuntimeException('Something went terribly wrong. Please contact support');
-        }
-
-        if (!$user->isActive) return AuthResult::error(AuthResult::ERROR_USER_INACTIVE);
-
-        if ($user->isDeleted) return AuthResult::error(AuthResult::ERROR_USER_DELETED);
+        if ($user->status === UserStatus::DELETED) return AuthResult::error(AuthResult::ERROR_USER_DELETED);
+        if ($user->status === UserStatus::BANNED) return AuthResult::error(AuthResult::ERROR_USER_BANNED);
+        if ($user->status === UserStatus::DISABLED) return AuthResult::error(AuthResult::ERROR_USER_DISABLED);
+        if ($user->status === UserStatus::INACTIVE) return AuthResult::error(AuthResult::ERROR_USER_INACTIVE);
 
         if (empty($password)) return AuthResult::error(AuthResult::ERROR_PASSWORD_EMPTY);
 
         if (!password_verify($password, $user->hashedPassword))
             return AuthResult::error(AuthResult::ERROR_INVALID_CREDENTIALS);
 
+        $time = time();
         $payload = [
-            'iss' => $this->iss,
-            'aud' => $this->aud,
+            'iss' => $iss,
+            'aud' => $aud,
             'sub' => $user->id,
-            'iat' => time(),
-            'exp' => time() + 3600,
-            'nbf' => time(),
+            'iat' => $time,
+            'exp' => $time + 3600,
+            'nbf' => $time,
         ];
 
-        return AuthResult::success(JWT::encode($payload, $this->key, self::DEFAULT_ALGORITHM));
+        return AuthResult::success(JWT::encode($payload, $key, self::DEFAULT_ALGORITHM));
     }
 }
