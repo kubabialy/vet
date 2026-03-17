@@ -120,16 +120,18 @@ readonly class Routes
      */
     public static function initialize(): self
     {
-        $userHandler = new UserHandler();
-
         return new self([
             [self::GET_REQ, '/hello/{name}', function (Request $request, Response $response, $args): Response {
                 $name = $args['name'];
                 $response->getBody()->write("Hello $name");
                 return $response;
             }],
-            [self::POST_REQ, '/users/signup', [$userHandler, 'signUp']],
-            [self::POST_REQ, '/users/signin', [$userHandler, 'signIn']],
+            [self::POST_REQ, '/users/signup', function (Request $request, Response $response, $args): Response {
+                return UserHandler::signUp($request, $response, $args);
+            }],
+            [self::POST_REQ, '/users/signin', function (Request $request, Response $response, $args): Response {
+                return UserHandler::signIn($request, $response, $args);
+            }],
         ]);
     }
 

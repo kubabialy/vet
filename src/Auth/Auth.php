@@ -18,6 +18,7 @@ class Auth
      */
     const string DEFAULT_ALGORITHM = 'HS256';
 
+    const int TOKEN_TTL = 3600;
     /**
      * Authenticates a user and generates a JWT token if successful.
      *
@@ -50,7 +51,7 @@ class Auth
             'aud' => $aud,
             'sub' => $user->id,
             'iat' => $time,
-            'exp' => $time + 3600,
+            'exp' => $time + self::TOKEN_TTL,
             'nbf' => $time,
         ];
 
