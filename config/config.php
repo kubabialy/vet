@@ -6,5 +6,5 @@ return [
         'iss' => $_ENV['JWT_ISSUER'],
         'aud' => $_ENV['JWT_AUDIENCE'],
     ],
-    'debug' => (bool) $_ENV['DEBUG'] ?? false,
+    'debug' => filter_var($_ENV['DEBUG'] ?? false, FILTER_VALIDATE_BOOL) ?? false,
 ];
