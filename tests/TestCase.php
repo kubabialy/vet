@@ -12,7 +12,7 @@ abstract class TestCase extends TC {
     {
         // Load environment variables
         $dotenv = Dotenv::createImmutable(__DIR__ . '/../');
-        $dotenv->load();
+        $dotenv->safeLoad();
 
         parent::setUp();
     }
