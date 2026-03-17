@@ -6,7 +6,7 @@ class Config
 {
     public readonly array $config;
 
-    public static self $instance;
+    private static ?self $instance = null;
 
     private function __construct()
     {
