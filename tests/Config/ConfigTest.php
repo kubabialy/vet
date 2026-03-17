@@ -11,8 +11,19 @@ class ConfigTest extends TestCase
 {
     public function testItWorks(): void
     {
-        $config = Config::getInstance();
-        $this->assertIsArray($config->config);
-        $this->assertTrue($config->config['debug']);
+        $previousDebugEnv = $_ENV['DEBUG'] ?? null;
+        $_ENV['DEBUG'] = '1';
+
+        try {
+            $config = Config::getInstance();
+            $this->assertIsArray($config->config);
+            $this->assertTrue($config->config['debug']);
+        } finally {
+            if ($previousDebugEnv === null) {
+                unset($_ENV['DEBUG']);
+            } else {
+                $_ENV['DEBUG'] = $previousDebugEnv;
+            }
+        }
     }
 }
