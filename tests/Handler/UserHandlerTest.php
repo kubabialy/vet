@@ -5,14 +5,10 @@ declare(strict_types=1);
 namespace Vet\Tests\Handler;
 
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\MockObject\MockObject;
 use Vet\Tests\TestCase;
-use Vet\Vet\Auth\Auth;
-use Vet\Vet\Auth\AuthResult;
 use Vet\Vet\DTO\SignInResponse;
 use Vet\Vet\DTO\SignUpResponse;
 use Vet\Vet\Handler\UserHandler;
-use Vet\Vet\Database\User;
 
 /**
  * UserHandlerTest tests the UserHandler class.
@@ -32,8 +28,6 @@ class UserHandlerTest extends TestCase
     protected function setUp(): void
     {
         $this->testSecret = base64_encode(random_bytes(32));
-        $authMock = $this->createMock(Auth::class);
-        $this->handler = new UserHandler($authMock);
     }
 
     public function testSignUpReturnsErrorWhenEmailIsEmpty(): void
@@ -41,7 +35,7 @@ class UserHandlerTest extends TestCase
         $request = $this->createRequest(['email' => '', 'password' => 'password123', 'repeatedPassword' => 'password123']);
         $response = $this->createResponse();
 
-        $result = $this->handler->signUp($request, $response, []);
+        $result = UserHandler::signUp($request, $response, []);
 
         $body = json_decode((string) $result->getBody(), true);
         $this->assertEquals(400, $result->getStatusCode());
@@ -54,7 +48,7 @@ class UserHandlerTest extends TestCase
         $request = $this->createRequest(['email' => 'invalid-email', 'password' => 'password123', 'repeatedPassword' => 'password123']);
         $response = $this->createResponse();
 
-        $result = $this->handler->signUp($request, $response, []);
+        $result = UserHandler::signUp($request, $response, []);
 
         $body = json_decode((string) $result->getBody(), true);
         $this->assertEquals(400, $result->getStatusCode());
@@ -67,7 +61,7 @@ class UserHandlerTest extends TestCase
         $request = $this->createRequest(['email' => 'test@example.com', 'password' => 'short', 'repeatedPassword' => 'short']);
         $response = $this->createResponse();
 
-        $result = $this->handler->signUp($request, $response, []);
+        $result = UserHandler::signUp($request, $response, []);
 
         $body = json_decode((string) $result->getBody(), true);
         $this->assertEquals(400, $result->getStatusCode());
@@ -80,7 +74,7 @@ class UserHandlerTest extends TestCase
         $request = $this->createRequest(['email' => 'test@example.com', 'password' => 'password123', 'repeatedPassword' => 'different123']);
         $response = $this->createResponse();
 
-        $result = $this->handler->signUp($request, $response, []);
+        $result = UserHandler::signUp($request, $response, []);
 
         $body = json_decode((string) $result->getBody(), true);
         $this->assertEquals(400, $result->getStatusCode());
@@ -93,7 +87,7 @@ class UserHandlerTest extends TestCase
         $request = $this->createRequest(['email' => '', 'password' => 'password123']);
         $response = $this->createResponse();
 
-        $result = $this->handler->signIn($request, $response, []);
+        $result = UserHandler::signIn($request, $response, []);
 
         $body = json_decode((string) $result->getBody(), true);
         $this->assertEquals(400, $result->getStatusCode());
@@ -106,7 +100,7 @@ class UserHandlerTest extends TestCase
         $request = $this->createRequest(['email' => 'test@example.com', 'password' => '']);
         $response = $this->createResponse();
 
-        $result = $this->handler->signIn($request, $response, []);
+        $result = UserHandler::signIn($request, $response, []);
 
         $body = json_decode((string) $result->getBody(), true);
         $this->assertEquals(400, $result->getStatusCode());

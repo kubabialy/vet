@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace Vet\Vet;
 
-require __DIR__ . '/../vendor/autoload.php';
-
+use Dotenv\Dotenv;
 use Exception;
 use Slim\Factory\AppFactory;
-use Vet\Vet\Routes;
 
+require __DIR__ . '/../vendor/autoload.php';
+
+/**
+ * Load environment variables from .env file.
+ */
+$dotenv = Dotenv::createImmutable(__DIR__ . '/../');
+$dotenv->load();
 
 $app = AppFactory::create();
 

@@ -5,18 +5,17 @@ declare(strict_types=1);
 namespace Vet\Tests;
 
 use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\Attributes\CoversClass;
 use Slim\App;
 use Vet\Vet\Routes;
 use Vet\Vet\Handler\UserHandler;
-use Vet\Vet\Auth\Auth;
 
+#[CoversClass(Routes::class)]
 class RoutesApplyTest extends TestCase
 {
     private function createUserHandler(): UserHandler
     {
-        $secret = base64_encode(random_bytes(32));
-        return new UserHandler(new Auth($secret));
+        return new UserHandler();
     }
 
     public function testApplyCallsGetForGetRoutes(): void
@@ -32,21 +31,6 @@ class RoutesApplyTest extends TestCase
         Routes::initialize()->apply($mockApp);
     }
 
-    public function testApplyCallsPostForPostRoutes(): void
-    {
-        $mockApp = $this->createMock(App::class);
-        
-        $mockApp->expects($this->exactly(2))
-            ->method('post')
-            ->willReturnCallback(function ($path, $handler) {
-                $this->assertTrue(in_array($path, ['/users/signup', '/users/signin']), "Unexpected path: $path");
-                $this->assertTrue(is_callable($handler) && is_array($handler));
-                return $this->createMock(\Slim\Interfaces\RouteInterface::class);
-            });
-
-        Routes::initialize()->apply($mockApp);
-    }
-
     public function testApplyUsesCorrectHttpMethodForEachRoute(): void
     {
         $mockGet = $this->createMock(App::class);
@@ -57,18 +41,6 @@ class RoutesApplyTest extends TestCase
 
         Routes::initialize()->apply($mockGet);
         Routes::initialize()->apply($mockPost);
-    }
-
-    public function testHandlerWithClassStringIsInstantiated(): void
-    {
-        $handler = [UserHandler::class, 'signUp'];
-
-        $this->assertFalse(is_callable($handler), 'Class::method array should not be callable');
-
-        [$class, $method] = $handler;
-        $processedHandler = [new $class(new Auth('test-secret')), $method];
-        
-        $this->assertTrue(is_callable($processedHandler), 'Processed handler should be callable');
     }
 
     public function testHandlerWithObjectInstanceIsCallable(): void

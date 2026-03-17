@@ -1,6 +1,8 @@
 vendor
 .phpunit.cache
 
+.env
+
 .idea
 
 tmp

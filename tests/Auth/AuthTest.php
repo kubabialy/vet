@@ -9,6 +9,7 @@ use Vet\Tests\TestCase;
 use Vet\Vet\Auth\Auth;
 use Vet\Vet\Auth\AuthResult;
 use Vet\Vet\Database\User;
+use Vet\Vet\DTO\UserStatus;
 
 #[CoversClass(Auth::class)]
 class AuthTest extends TestCase
@@ -26,9 +27,7 @@ class AuthTest extends TestCase
             id: $data['id'],
             email: $data['email'] ?? 'test@example.com',
             hashedPassword: $data['passwordHash'],
-            isLogable: $data['isLogable'],
-            isDeleted: $data['isDeleted'],
-            isActive: $data['isActivated'],
+            status: $data['status'],
             banReason: $data['banReason'] ?? null,
             disableReason: $data['disableReason'] ?? null,
         );
@@ -39,15 +38,12 @@ class AuthTest extends TestCase
         $user = $this->createUser([
             'id' => 1,
             'passwordHash' => password_hash('correct-password', PASSWORD_ARGON2ID),
-            'isLogable' => true,
-            'isActivated' => true,
-            'isDeleted' => false,
+            'status' => UserStatus::ACTIVE,
             'banReason' => null,
             'disableReason' => null,
         ]);
 
-        $auth = new Auth($this->testSecret);
-        $result = $auth->authenticate($user, 'correct-password');
+        $result = Auth::authenticate($user, 'correct-password', $this->testSecret, 'iss', 'aud');
 
         $this->assertIsString($result->token);
         $this->assertCount(3, explode('.', $result->token));
@@ -58,14 +54,10 @@ class AuthTest extends TestCase
         $user = $this->createUser([
             'id' => 1,
             'passwordHash' => password_hash('correct-password', PASSWORD_ARGON2ID),
-            'isLogable' => true,
-            'isActivated' => true,
-            'isDeleted' => false,
+            'status' => UserStatus::ACTIVE,
         ]);
 
-        $auth = new Auth($this->testSecret);
-
-        $result = $auth->authenticate($user, 'wrong-password');
+        $result = Auth::authenticate($user, 'wrong-password', $this->testSecret, 'iss', 'aud');
         $this->assertTrue($result->hasError);
         $this->assertNull($result->token);
         $this->assertEquals(AuthResult::ERROR_INVALID_CREDENTIALS, $result->error);
@@ -76,15 +68,11 @@ class AuthTest extends TestCase
         $user = $this->createUser([
             'id' => 1,
             'passwordHash' => password_hash('correct-password', PASSWORD_ARGON2ID),
-            'isLogable' => false,
-            'isActivated' => true,
-            'isDeleted' => false,
+            'status' => UserStatus::BANNED,
             'banReason' => 'Spam activity',
         ]);
 
-        $auth = new Auth($this->testSecret);
-
-        $result = $auth->authenticate($user, 'correct-password');
+        $result = Auth::authenticate($user, 'correct-password', $this->testSecret, 'iss', 'aud');
         $this->assertTrue($result->hasError);
         $this->assertNull($result->token);
         $this->assertEquals(AuthResult::ERROR_USER_BANNED, $result->error);
@@ -95,15 +83,11 @@ class AuthTest extends TestCase
         $user = $this->createUser([
             'id' => 1,
             'passwordHash' => password_hash('correct-password', PASSWORD_ARGON2ID),
-            'isLogable' => false,
-            'isActivated' => true,
-            'isDeleted' => false,
+            'status' => UserStatus::DISABLED,
             'disableReason' => 'Account under review',
         ]);
 
-        $auth = new Auth($this->testSecret);
-
-        $result = $auth->authenticate($user, 'correct-password');
+        $result = Auth::authenticate($user, 'correct-password', $this->testSecret, 'iss', 'aud');
         $this->assertTrue($result->hasError);
         $this->assertNull($result->token);
         $this->assertEquals(AuthResult::ERROR_USER_DISABLED, $result->error);
@@ -114,14 +98,10 @@ class AuthTest extends TestCase
         $user = $this->createUser([
             'id' => 1,
             'passwordHash' => password_hash('correct-password', PASSWORD_ARGON2ID),
-            'isLogable' => false,
-            'isActivated' => false,
-            'isDeleted' => false,
+            'status' => UserStatus::INACTIVE,
         ]);
 
-        $auth = new Auth($this->testSecret);
-
-        $result = $auth->authenticate($user, 'correct-password');
+        $result = Auth::authenticate($user, 'correct-password', $this->testSecret, 'iss', 'aud');
         $this->assertTrue($result->hasError);
         $this->assertNull($result->token);
         $this->assertEquals(AuthResult::ERROR_USER_INACTIVE, $result->error);
@@ -132,14 +112,10 @@ class AuthTest extends TestCase
         $user = $this->createUser([
             'id' => 1,
             'passwordHash' => password_hash('correct-password', PASSWORD_ARGON2ID),
-            'isLogable' => false,
-            'isActivated' => true,
-            'isDeleted' => true,
+            'status' => UserStatus::DELETED,
         ]);
 
-        $auth = new Auth($this->testSecret);
-
-        $result = $auth->authenticate($user, 'correct-password');
+        $result = Auth::authenticate($user, 'correct-password', $this->testSecret, 'iss', 'aud');
         $this->assertTrue($result->hasError);
         $this->assertNull($result->token);
         $this->assertEquals(AuthResult::ERROR_USER_DELETED, $result->error);
@@ -150,14 +126,10 @@ class AuthTest extends TestCase
         $user = $this->createUser([
             'id' => 1,
             'passwordHash' => password_hash('some-password', PASSWORD_ARGON2ID),
-            'isLogable' => true,
-            'isActivated' => true,
-            'isDeleted' => false,
+            'status' => UserStatus::ACTIVE,
         ]);
 
-        $auth = new Auth($this->testSecret);
-
-        $result = $auth->authenticate($user, '');
+        $result = Auth::authenticate($user, '', $this->testSecret, 'iss', 'aud');
         $this->assertTrue($result->hasError);
         $this->assertNull($result->token);
         $this->assertEquals(AuthResult::ERROR_PASSWORD_EMPTY, $result->error);
@@ -168,13 +140,10 @@ class AuthTest extends TestCase
         $user = $this->createUser([
             'id' => 123,
             'passwordHash' => password_hash('password', PASSWORD_ARGON2ID),
-            'isLogable' => true,
-            'isActivated' => true,
-            'isDeleted' => false,
+            'status' => UserStatus::ACTIVE,
         ]);
 
-        $auth = new Auth($this->testSecret);
-        $result = $auth->authenticate($user, 'password');
+        $result = Auth::authenticate($user, 'password', $this->testSecret, 'iss', 'aud');
 
         $payload = json_decode(base64_decode(explode('.', $result->token)[1]), true);
         $this->assertArrayHasKey('sub', $payload);
@@ -186,13 +155,10 @@ class AuthTest extends TestCase
         $user = $this->createUser([
             'id' => 1,
             'passwordHash' => password_hash('password', PASSWORD_ARGON2ID),
-            'isLogable' => true,
-            'isActivated' => true,
-            'isDeleted' => false,
+            'status' => UserStatus::ACTIVE,
         ]);
 
-        $auth = new Auth($this->testSecret);
-        $result = $auth->authenticate($user, 'password');
+        $result = Auth::authenticate($user, 'password', $this->testSecret, 'iss', 'aud');
 
         $payload = json_decode(base64_decode(explode('.', $result->token)[1]), true);
         $this->assertArrayHasKey('iat', $payload);
@@ -203,13 +169,10 @@ class AuthTest extends TestCase
         $user = $this->createUser([
             'id' => 1,
             'passwordHash' => password_hash('password', PASSWORD_ARGON2ID),
-            'isLogable' => true,
-            'isActivated' => true,
-            'isDeleted' => false,
+            'status' => UserStatus::ACTIVE,
         ]);
 
-        $auth = new Auth($this->testSecret);
-        $result = $auth->authenticate($user, 'password');
+        $result = Auth::authenticate($user, 'password', $this->testSecret, 'iss', 'aud');
 
         $payload = json_decode(base64_decode(explode('.', $result->token)[1]), true);
         $this->assertArrayHasKey('exp', $payload);
