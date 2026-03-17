@@ -7,7 +7,6 @@ namespace Vet\Vet;
 use Exception;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use Vet\Vet\Auth\Auth;
 use Vet\Vet\Handler\UserHandler;
 
 
@@ -121,9 +120,7 @@ readonly class Routes
      */
     public static function initialize(): self
     {
-        $jwtSecret = getenv('JWT_SECRET') ?: 'default-secret-key-change-in-production';
-        $auth = new Auth($jwtSecret);
-        $userHandler = new UserHandler($auth);
+        $userHandler = new UserHandler();
 
         return new self([
             [self::GET_REQ, '/hello/{name}', function (Request $request, Response $response, $args): Response {
