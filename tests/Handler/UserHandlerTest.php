@@ -152,6 +152,60 @@ class UserHandlerTest extends TestCase
         $this->assertNull($response->userId);
     }
 
+
+    
+    // ToDo#1: extend the UserHandler endpoint with JWT injection
+    // ToDo#2: extend the UserHandler endpoint with JWT inbound requests validation
+
+    private function testOutboundJwtHeaderIsAddedForSuccessfulJwtCreation()
+    {
+        // Scenario: JWT is injected into outbound request after successful token creation and authentication
+        //   Given a valid JWT is provided by Auth class [mock this action]
+        //   When an outbound request is sent via [ToDo#1] function of UserHandler endpoint
+        //   Then the request header SHOULD contain "Authorization: Bearer <jwt_token>" string
+        //
+        // Note: mock Auth logic to simulate successful/failed token creation and authentication.
+    }
+
+    private function testOutboundJwtHeaderIsNotAddedForUnsuccessfulJwtCreation()
+    {
+        // Scenario: JWT is not injected into outbound request after unsuccessful token creation
+        //   Given a JWT IS NOT provided by Auth class [mock this action]
+        //   When an outbound request is sent via [ToDo#1] function of UserHandler endpoint
+        //   Then the request header SHOULD NOT contain "Authorization: Bearer <jwt_token>" string
+        //
+        // Note: mock Auth logic to simulate successful/failed token creation and authentication.
+    }
+
+    private function testInboundJwtHeaderIsProcessedForValidJwt()
+    {
+        // Scenario: Valid JWT allows inbound request processing
+        //   Given an inbound request with header "Authorization: Bearer <jwt_token>"
+        //   When the request is handled by [ToDo#2] function of UserHandler endpoint
+        //   And the JWT is validated successfully [mock this action]
+        //   Then the request should be accepted
+        //   And the response status should be 200
+    }
+
+    private function testInboundJwtHeaderIsRejectedForInvalidJwt(){
+        // Scenario: Invalid JWT rejects inbound request as unauthorized
+        //   Given an inbound request with header "Authorization: Bearer <invalid jwt_token>>"
+        //   When the request is handled by [ToDo#2] function of UserHandler endpoint
+        //   And the JWT validation fails [mock this action]
+        //   Then the request should be rejected
+        //   And the response status should be 401
+    }
+
+    private function testInboundJwtHeaderIsRejectedForMissingJwt(){
+        // Scenario: Missing JWT rejects inbound request as unauthorized
+        //   Given an inbound request without an authorization header
+        //   When the request is handled by [ToDo#2] function of UserHandler endpoint
+        //   Then the request should be rejected
+        //   And the response status should be 401
+    }
+
+
+
     private function createRequest(array $body): \Psr\Http\Message\ServerRequestInterface
     {
         $request = $this->createMock(\Psr\Http\Message\ServerRequestInterface::class);
